@@ -1,4 +1,5 @@
-const { JWT_SECRET } = require("../secrets"); // use this secret!
+const jwt = require('jsonwebtoken')
+const { jwtSecret } = require("../secrets"); // use this secret!
 const { findBy } = require("../users/users-model");
 
 /*
@@ -17,6 +18,20 @@ const { findBy } = require("../users/users-model");
   Put the decoded token in the req object, to make life easier for middlewares downstream!
 */
 const restricted = (req, res, next) => {
+    const token = req.headers.authorization
+  
+    if(!token){
+      res.status(401).json({"message": "Token required"})
+    } else {
+      jwt.verify(token, jwtSecret, (error, decoded) => {
+        if(error){
+          res.status(401).json({"message": "Token invalid"})
+        } else {
+          req.decodedJwt = decoded
+          next()
+        }
+    })
+  }
 }
 
 /*
@@ -85,6 +100,8 @@ const validateRoleName = (req, res, next) => {
     res.status(422).json({"message": "Role name can not be admin"})
   } else if(role.length > 32) {
     res.status(422).json({"message": "Role name can not be longer than 32 chars"})
+  } else {
+    next()
   }
 }
 
